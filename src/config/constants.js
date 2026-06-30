@@ -1,6 +1,17 @@
 // Central gameplay constants. Tweak balance here without touching systems.
 export const WIN_KILLS = 250000;          // exact victory threshold — enforced, no shortcuts
 
+// Shared default size for every billboarded sprite NPC (the peaceful survivor
+// AND all zombie types) so they all stand at a consistent height. EYE_FRAC /
+// FEET_FRAC are measured from the sprite cell (eyes/feet as a fraction of cell
+// height from the bottom); ASPECT is the cell's width/height.
+export const NPC_SIZE = {
+  HEIGHT: 2.7,            // default billboard height (metres)
+  EYE_FRAC: 0.562,
+  FEET_FRAC: 0.012,
+  ASPECT: 170 / 256,
+};
+
 export const WORLD = {
   SIZE: 220,            // half-extent of the playable square (units = metres)
   CELL: 2,             // nav-grid cell size

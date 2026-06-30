@@ -1,26 +1,19 @@
 import { Entity } from './Entity.js';
 import { SpriteBillboard } from '../rendering/Billboard.js';
-import { PLAYER } from '../config/constants.js';
-
-// Sprite metrics measured from npc_peaceful.png (front cell): the character's
-// eyes sit ~0.56 up from the feet and the feet are at the cell bottom. To make
-// the survivor's eyes meet the player's eye level we size the billboard so that
-// (eyes - feet) spans EYE_HEIGHT, and offset it so the feet rest on the ground.
-const EYE_FRAC = 0.562;     // eye line as a fraction of cell height from the bottom
-const FEET_FRAC = 0.012;    // feet line from the bottom
-const CELL_ASPECT = 170 / 256;
+import { NPC_SIZE } from '../config/constants.js';
 
 // Peaceful survivor near spawn. Billboarded with the friendly sheet, wanders
-// near a home point and flees from approaching zombies. Purely atmospheric.
+// near a home point and flees from approaching zombies. Uses the shared default
+// NPC height (NPC_SIZE) with the feet offset so they rest on the ground.
 export class NPC extends Entity {
   constructor(ctx, sheet, home) {
     super(ctx);
     this.radius = 0.4;
     this.home = home;
     this.pos.set(home.x, 0, home.z);
-    this.height = PLAYER.EYE_HEIGHT / (EYE_FRAC - FEET_FRAC);   // ≈ 3.0
-    this.yCenter = this.height / 2 - FEET_FRAC * this.height;   // feet on the ground
-    this.billboard = new SpriteBillboard(sheet, { width: this.height * CELL_ASPECT, height: this.height, color: 0xffffff, animFps: 6 });
+    this.height = NPC_SIZE.HEIGHT;
+    this.yCenter = this.height / 2 - NPC_SIZE.FEET_FRAC * this.height;   // feet on the ground
+    this.billboard = new SpriteBillboard(sheet, { width: this.height * NPC_SIZE.ASPECT, height: this.height, color: 0xffffff, animFps: 6 });
     this.billboard.mesh.position.set(home.x, this.yCenter, home.z);
     ctx.scene.add(this.billboard.mesh);
     this.facing = 0;
