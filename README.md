@@ -91,7 +91,8 @@ src/
                sprites), Effects (blood pool + screen shake), HUD, WeaponView
   world/       World (seeded procedural map), Collision (AABB + sliding + LOS),
                Nav (BFS flow-field pathfinding)
-  systems/     Score (+ win condition), WaveManager, GameState (menu/pause/win/death)
+  systems/     Score (+ win condition), WaveManager, GameState (menu/pause/win/death),
+               TimeOfDay (10-minute day/night cycle)
   audio/       Audio (procedural WebAudio SFX — no audio files)
   config/      constants.js (balance), assets.js (single asset manifest)
   generated/   assets_data.js (embedded data: URIs — produced by the build)
@@ -174,9 +175,11 @@ CHROMIUM=/path/to/chrome node tools/smoke_test.mjs   # screenshots -> ./_smoke_s
 7. ✅ Power-of-two, tileable textures
 8. ✅ Entity billboarding (zombies, NPC, items always face the camera; directional sprite rows)
 9. ✅ Static geometry uses textured polygons, not billboards
-10. ✅ HUD: segmented health, ammo counter, kill counter /250,000, weapon name + icon bar, accuracy, wave
+10. ✅ HUD: segmented health, ammo counter, circular **Kills / Accuracy / Time** gauges,
+    wave indicator, and a top weapon picker that appears only on switch (1–5 / wheel)
 11. ✅ Kill counter tracks to **exactly 250,000** → victory
 12. ✅ Victory screen with final stats (time, accuracy, kills by type, score)
 13. ✅ Procedural SFX for weapons, zombies, pickups, footsteps, victory
 14. ✅ Effects: muzzle flash, blood particles, screen shake, damage vignette, death fade
 15. ✅ Modular & extensible — weapons/zombies/textures added via data + assets only
+16. ✅ 10-minute day/night cycle (sky, sun, fog and ambient light shift dawn→day→dusk→night)

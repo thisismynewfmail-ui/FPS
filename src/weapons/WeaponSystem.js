@@ -51,7 +51,7 @@ export class WeaponSystem {
     this._setZoom(false);
     const def = this.current.def;
     this.ctx.weaponView.setWeapon(def.view);
-    this.ctx.hud.setWeapon(i, def.name);
+    this.ctx.hud.setWeapon(i, def.name, !instant);   // show the picker only on a real switch
     if (!instant) this.ctx.audio.switchWeapon();
     this._refreshAmmoHUD();
   }

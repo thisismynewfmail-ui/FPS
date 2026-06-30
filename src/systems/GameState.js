@@ -79,6 +79,7 @@ export class GameState {
     this._hide();
     this.state = STATE.PLAYING;
     this._showHUD(true);
+    this.hooks.resume && this.hooks.resume();   // clears the loop's re-pause guard
     this.ctx.input.requestLock();
   }
 

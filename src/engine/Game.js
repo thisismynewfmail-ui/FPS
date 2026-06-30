@@ -16,6 +16,7 @@ import { PickupManager } from '../entities/Pickup.js';
 import { Score } from '../systems/Score.js';
 import { WaveManager } from '../systems/WaveManager.js';
 import { GameState } from '../systems/GameState.js';
+import { TimeOfDay } from '../systems/TimeOfDay.js';
 import { Audio } from '../audio/Audio.js';
 import { WORLD } from '../config/constants.js';
 
@@ -40,6 +41,7 @@ export class Game {
     ctx.nav.build(ctx.collision);
 
     ctx.effects = new Effects(ctx.scene, assets.misc.blood);
+    ctx.timeOfDay = new TimeOfDay(ctx.renderer);
     ctx.hud = new HUD(hudRoot);
     ctx.weaponView = new WeaponView(hudRoot);
 
@@ -61,6 +63,15 @@ export class Game {
     ctx.gameState = new GameState(ctx, hudRoot, {
       start: () => this.beginRun(),
       restart: () => this.beginRun(),
+      // After resuming, the pointer lock may be briefly denied by the browser's
+      // post-Esc cooldown; clear the guard so the loop doesn't instantly re-pause.
+      resume: () => { this._wasLocked = false; },
+    });
+
+    // If we're playing but the mouse isn't locked (e.g. lock was denied right
+    // after resuming), a click on the view re-acquires it.
+    canvas.addEventListener('click', () => {
+      if (ctx.gameState.isPlaying() && !ctx.input.locked) ctx.input.requestLock();
     });
 
     ctx.player.applyCamera();          // place camera for the menu backdrop
@@ -86,6 +97,7 @@ export class Game {
     ctx.player.applyCamera();
     ctx.score.reset();
     ctx.waves.reset();
+    ctx.timeOfDay.reset();
     ctx.hud.setWave(0);
     ctx.effects.shake = 0;
     this._wasLocked = false;
@@ -137,6 +149,7 @@ export class Game {
     ctx.pickups.update(dt);
     ctx.waves.update(dt);
     ctx.effects.update(dt);
+    ctx.timeOfDay.update(dt);
 
     // re-apply camera with screen shake on top of the player's view
     ctx.effects.sampleShake(this._shake);
@@ -146,6 +159,8 @@ export class Game {
     ctx.hud.setHealth(ctx.player.health, 100);
     ctx.hud.setKills(ctx.score.kills);
     ctx.hud.setAccuracy(ctx.score.accuracy());
+    const tod = ctx.timeOfDay;
+    ctx.hud.setTime(ctx.score.timeSurvived(), tod.phase, tod.label(), tod.isNight());
 
     // ambience scales with nearby living zombies
     let near = 0;

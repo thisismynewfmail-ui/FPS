@@ -9,8 +9,8 @@ export class NPC extends Entity {
     this.radius = 0.4;
     this.home = home;
     this.pos.set(home.x, 0, home.z);
-    this.height = 1.7;
-    this.billboard = new SpriteBillboard(sheet, { width: 1.7 * (170 / 256), height: 1.7, color: 0xffffff, animFps: 6 });
+    this.height = 1.95;     // taller so the survivor reads at the player's eye level
+    this.billboard = new SpriteBillboard(sheet, { width: 1.95 * (170 / 256), height: 1.95, color: 0xffffff, animFps: 6 });
     this.billboard.mesh.position.set(home.x, this.height / 2, home.z);
     ctx.scene.add(this.billboard.mesh);
     this.facing = 0;

@@ -49,17 +49,20 @@ export class Renderer {
   }
 
   _buildLights() {
-    // Dusk apocalypse palette: cool sky bounce + warm low sun + gentle ambient.
-    const hemi = new THREE.HemisphereLight(0xa6bad6, 0x322c24, 0.98);
-    this.scene.add(hemi);
+    // References kept so the day/night cycle (TimeOfDay) can drive them.
+    this.hemi = new THREE.HemisphereLight(0xa6bad6, 0x322c24, 0.98);
+    this.scene.add(this.hemi);
 
-    const sun = new THREE.DirectionalLight(0xffe0b0, 0.85);
-    sun.position.set(-60, 80, 40);
-    this.scene.add(sun);
+    this.sun = new THREE.DirectionalLight(0xffe0b0, 0.85);
+    this.sun.position.set(-60, 80, 40);
+    this.scene.add(this.sun);
 
-    const ambient = new THREE.AmbientLight(0x49525f, 0.5);
-    this.scene.add(ambient);
+    this.ambient = new THREE.AmbientLight(0x49525f, 0.5);
+    this.scene.add(this.ambient);
   }
+
+  // exposed for TimeOfDay
+  get skyUniforms() { return this.sky.material.uniforms; }
 
   setFOV(fov) {
     this.camera.fov = fov;
