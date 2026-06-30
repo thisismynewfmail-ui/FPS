@@ -1,0 +1,7 @@
+# Runtime / tooling — the game itself needs no build step or npm install
+node_modules/
+package.json
+package-lock.json
+_smoke_shots/
+*.log
+.DS_Store

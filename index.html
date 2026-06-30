@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧟</text></svg>" />
+<title>OUTBREAK: 250K — Zombie Survival FPS</title>
+<style>
+  :root { --ink:#c8d2cc; --accent:#b8e02c; --danger:#d22; --panel:rgba(8,10,12,0.82); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#05060a;
+    font-family:'Courier New', ui-monospace, monospace; color:var(--ink); cursor:default; }
+  #game { position:fixed; inset:0; }
+  canvas { display:block; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges; }
+
+  /* ---- HUD root (transparent, click-through except overlays/buttons) ---- */
+  #hud { position:fixed; inset:0; pointer-events:none; user-select:none;
+    text-transform:uppercase; letter-spacing:1px; font-weight:bold; }
+
+  .crosshair { position:absolute; left:50%; top:50%; width:22px; height:22px; transform:translate(-50%,-50%); }
+  .crosshair::before, .crosshair::after { content:''; position:absolute; background:rgba(230,240,230,0.9); }
+  .crosshair::before { left:50%; top:0; width:2px; height:100%; transform:translateX(-50%); }
+  .crosshair::after  { top:50%; left:0; height:2px; width:100%; transform:translateY(-50%); }
+
+  .vignette { position:absolute; inset:0; pointer-events:none; opacity:0;
+    background:radial-gradient(ellipse at center, rgba(120,0,0,0) 45%, rgba(140,0,0,0.85) 100%); }
+
+  .scope { position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(circle at center, rgba(0,0,0,0) 26%, rgba(0,0,0,0.55) 33%, #000 41%); }
+  .scope::before, .scope::after { content:''; position:absolute; background:rgba(0,0,0,0.8); }
+  .scope::before { left:50%; top:0; width:1px; height:100%; transform:translateX(-50%); }
+  .scope::after  { top:50%; left:0; height:1px; width:100%; transform:translateY(-50%); }
+
+  /* ---- top centre: kill counter + victory progress ---- */
+  .kill-wrap { position:absolute; top:12px; left:50%; transform:translateX(-50%); text-align:center; min-width:340px; }
+  .kill-label { font-size:18px; color:var(--accent); text-shadow:none;
+    background:var(--panel); border:2px solid #2a3330; padding:5px 14px; display:inline-block; }
+  .progress { margin-top:5px; height:10px; background:var(--panel); border:2px solid #2a3330; }
+  .progress-fill { height:100%; width:0%; background:var(--accent); }
+
+  .wave { position:absolute; top:14px; left:14px; font-size:16px; color:#e0a030;
+    background:var(--panel); border:2px solid #2a3330; padding:5px 10px; }
+  .accuracy { position:absolute; top:14px; right:14px; font-size:15px; color:var(--ink);
+    background:var(--panel); border:2px solid #2a3330; padding:5px 10px; }
+
+  /* ---- bottom left: health ---- */
+  .health { position:absolute; left:16px; bottom:16px; background:var(--panel); border:2px solid #2a3330; padding:8px 10px; }
+  .hud-cap { font-size:11px; color:#7d8a82; margin-bottom:4px; }
+  .seg-row { display:flex; gap:3px; }
+  .seg { width:14px; height:18px; background:#222a26; border:1px solid #11150f; }
+  .seg.on { background:#3a8f3a; }
+  .seg.low { background:var(--danger); }
+  .big-num { font-size:26px; margin-top:4px; color:#dfe8df; }
+  .big-num.empty { color:var(--danger); }
+
+  /* ---- bottom right: ammo ---- */
+  .ammo { position:absolute; right:16px; bottom:16px; background:var(--panel); border:2px solid #2a3330; padding:8px 12px; text-align:right; }
+
+  /* ---- bottom centre: weapon name + select bar ---- */
+  .weapon-center { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); text-align:center; }
+  .weapon-name { font-size:15px; color:#cfd8cf; margin-bottom:5px; background:var(--panel); border:2px solid #2a3330; padding:3px 10px; display:inline-block; }
+  .weapon-bar { display:flex; gap:5px; justify-content:center; }
+  .slot { position:relative; width:54px; height:40px; background:var(--panel); border:2px solid #2a3330; opacity:0.7; }
+  .slot.active { border-color:var(--accent); opacity:1; background:rgba(40,52,30,0.85); }
+  .slot-icon { width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
+  .slot-key { position:absolute; left:2px; top:0; font-size:10px; color:#9aa89a; }
+
+  .toast { position:absolute; left:50%; top:58%; transform:translateX(-50%); font-size:20px; color:#e8eee0;
+    background:var(--panel); border:2px solid #2a3330; padding:6px 16px; transition:opacity 0.15s; }
+
+  /* ---- first-person weapon ---- */
+  .weapon-layer { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .weapon-img { position:absolute; left:50%; bottom:-22px; width:min(33vw,430px);
+    transform:translate(-50%,0); image-rendering:pixelated; transform-origin:bottom center; }
+  .muzzle-flash { position:absolute; left:50%; bottom:46%; width:170px; transform:translate(-50%,0);
+    image-rendering:pixelated; opacity:0; }
+
+  /* ---- overlays (menu/pause/victory/death) ---- */
+  .overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(2,4,6,0.72); pointer-events:auto; }
+  .panel { background:var(--panel); border:3px solid #39443c; padding:34px 40px; max-width:680px; text-align:center; }
+  .panel h1 { font-size:52px; letter-spacing:3px; color:#dfe8df; }
+  .panel h1 .sub { color:var(--accent); }
+  .panel h1.win { color:var(--accent); }
+  .panel h1.dead { color:var(--danger); }
+  .panel .tag { margin:14px 0; font-size:16px; color:#aebaae; text-transform:none; letter-spacing:0.5px; }
+  .controls { margin:16px 0; font-size:13px; color:#9aa89a; line-height:1.9; text-transform:none; }
+  .controls b { color:var(--accent); }
+  .stats { display:grid; grid-template-columns:auto auto; gap:6px 26px; justify-content:center;
+    margin:18px auto; font-size:15px; }
+  .stats div:nth-child(odd) { color:#8a978a; text-align:right; }
+  .stats div:nth-child(even) { color:#e6eee0; text-align:left; }
+  .btn { margin-top:18px; font-family:inherit; font-size:20px; font-weight:bold; letter-spacing:2px;
+    color:#0a0d08; background:var(--accent); border:none; padding:14px 30px; cursor:pointer; text-transform:uppercase; }
+  .btn:hover { background:#cdf24a; }
+
+  #loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; background:#05060a; color:var(--accent); font-size:22px; letter-spacing:3px; z-index:50; }
+  #loading small { color:#6a766a; font-size:13px; letter-spacing:1px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+  <div id="game">
+    <canvas id="canvas"></canvas>
+    <div id="hud"></div>
+    <div id="loading">
+      <div>OUTBREAK: 250K</div>
+      <div id="loading-pct">LOADING… 0%</div>
+      <small>procedurally generating the wasteland</small>
+    </div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
