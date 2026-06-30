@@ -354,30 +354,34 @@ def flood_key(rgb, near=244, sat_max=14, preserve_top=0.0):
     return out
 
 
-def defringe(rgba, passes=2):
-    """Pull light halo edges toward neighbour colour to reduce white fringing
-    under nearest-neighbour sampling."""
-    arr = rgba.astype(np.float32)
+def dehalo(rgba, passes=3, lum_t=200, sat_t=24):
+    """Remove the leftover light/low-saturation anti-aliased ring (the white
+    'halo') left by background keying. Each pass erodes opaque edge pixels that
+    are both light and near-greyscale — i.e. white-bg blend pixels — while
+    leaving the character's coloured/dark edges (and the white bow's interior)
+    intact. Uses 8-connectivity so corners are cleaned too."""
+    arr = rgba.copy()
     for _ in range(passes):
         a = arr[..., 3]
-        opaque = a > 32
-        lum = arr[..., :3].mean(axis=2)
-        # edge = opaque, light, next to transparent
-        trans = ~opaque
-        nbr_trans = np.zeros_like(trans)
-        nbr_trans[1:, :] |= trans[:-1, :]
-        nbr_trans[:-1, :] |= trans[1:, :]
-        nbr_trans[:, 1:] |= trans[:, :-1]
-        nbr_trans[:, :-1] |= trans[:, 1:]
-        fringe = opaque & nbr_trans & (lum > 225)
-        arr[fringe, 3] = 90
-    return np.clip(arr, 0, 255).astype(np.uint8)
+        rgb = arr[..., :3].astype(int)
+        lum = rgb.mean(axis=2)
+        sat = rgb.max(axis=2) - rgb.min(axis=2)
+        opq = a > 0
+        trans = ~opq
+        nbr = np.zeros_like(trans)
+        nbr[1:, :] |= trans[:-1, :]; nbr[:-1, :] |= trans[1:, :]
+        nbr[:, 1:] |= trans[:, :-1]; nbr[:, :-1] |= trans[:, 1:]
+        nbr[1:, 1:] |= trans[:-1, :-1]; nbr[:-1, :-1] |= trans[1:, 1:]
+        nbr[1:, :-1] |= trans[:-1, 1:]; nbr[:-1, 1:] |= trans[1:, :-1]
+        halo = opq & nbr & (lum > lum_t) & (sat < sat_t)
+        arr[halo, 3] = 0
+    return arr
 
 
 def process_sheet(src, dst, preserve_top=0.0):
     rgb = np.asarray(Image.open(src).convert("RGB"))
     rgba = flood_key(rgb, preserve_top=preserve_top)
-    rgba = defringe(rgba)
+    rgba = dehalo(rgba)
     img = Image.fromarray(rgba, "RGBA")
     img.save(os.path.join(SPR_DIR, dst))
     print("  sprite", dst, img.size)
