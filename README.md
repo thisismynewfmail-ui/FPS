@@ -5,24 +5,39 @@ Dead*'s invasion mode and the look of early-2000s shooters (Half-Life / PS1-era)
 Sprite-billboarded enemies, textured polygonal world, fog, a five-weapon arsenal,
 escalating hordes — and exactly **one** way to win: **kill 250,000 zombies.**
 
-> Engine: **Three.js (WebGL)**, vendored locally in `vendor/` — no build step, no
-> npm install, no internet needed to play. Pure ES modules.
+> Engine: **Three.js (WebGL)**, bundled into one self-contained file with all
+> assets embedded — no build step, no npm install, no internet needed to play.
 
 ---
 
 ## Run it
 
-The game is static files but uses ES modules + texture loads, so it must be served
-over HTTP (opening `index.html` via `file://` is blocked by the browser).
+**Easiest — just open the file.** `index.html` loads a single self-contained
+bundle (`dist/game.bundle.js`) with Three.js and every texture/sprite embedded as
+`data:` URIs, so it runs by **double-clicking `index.html`** in a modern desktop
+browser (Chrome / Edge / Firefox / Safari). No server required.
+
+> Why embedded? A WebGL game opened from `file://` can't upload *external* image
+> files as textures (the browser taints them as cross-origin) — and ES-module
+> scripts are blocked over `file://` entirely. Shipping one classic bundle with
+> `data:`-URI assets sidesteps both, so the game "just works" offline.
+
+**Or serve it over HTTP** (also fine, slightly faster start):
 
 ```bash
 cd FPS
-python3 -m http.server 8000
-# then open http://localhost:8000/  in a desktop browser and click PLAY
+python3 -m http.server 8000      # then open http://localhost:8000/
 ```
 
-Any static server works (`npx serve`, `php -S`, nginx, …). Click the canvas to lock
-the mouse; press **Esc** to pause/release.
+Click **PLAY**, then click the canvas to lock the mouse; press **Esc** to pause/release.
+
+### Rebuilding the bundle (only if you edit `src/`)
+```bash
+pip install Pillow numpy && npm i esbuild
+bash tools/build.sh              # regenerates assets, embeds them, bundles to dist/
+```
+The modular source under `src/` is the source of truth; `tools/build.sh` regenerates
+`src/generated/assets_data.js` (embedded assets) and `dist/game.bundle.js`.
 
 ### Controls
 | Action | Key |
@@ -79,8 +94,10 @@ src/
   systems/     Score (+ win condition), WaveManager, GameState (menu/pause/win/death)
   audio/       Audio (procedural WebAudio SFX — no audio files)
   config/      constants.js (balance), assets.js (single asset manifest)
-assets/        textures/ + sprites/ (+ items/, weapons/) — all loaded from config
-tools/         gen_assets.py (asset pipeline), smoke_test.mjs (optional Playwright check)
+  generated/   assets_data.js (embedded data: URIs — produced by the build)
+assets/        textures/ + sprites/ (+ items/, weapons/) — source PNGs, all via config
+dist/          game.bundle.js (shipped self-contained classic bundle)
+tools/         gen_assets.py (art pipeline), embed_assets.py, build.sh, smoke_test.mjs
 vendor/        three.module.js (Three.js r160, vendored)
 ```
 

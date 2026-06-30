@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { TEXTURES, SHEETS, ITEM_SPRITES, WEAPON_SPRITES, MISC_SPRITES } from '../config/assets.js';
+import { EMBEDDED } from '../generated/assets_data.js';
 
 // Loads every texture declared in config/assets.js and applies retro filtering.
 // Worlds textures wrap+repeat; sprites use clamp. All use NEAREST for the
@@ -7,6 +8,12 @@ import { TEXTURES, SHEETS, ITEM_SPRITES, WEAPON_SPRITES, MISC_SPRITES } from '..
 export class AssetLoader {
   constructor() {
     this.loader = new THREE.TextureLoader();
+    // When opened directly from disk (file://), a crossOrigin="anonymous" <img>
+    // request fails CORS, so textures never load. Drop the CORS attribute there
+    // so the game also runs by simply double-clicking index.html.
+    if (typeof location !== 'undefined' && location.protocol === 'file:') {
+      this.loader.crossOrigin = null;
+    }
     this.textures = {};   // name -> THREE.Texture (tileable world surfaces)
     this.sheets = {};     // name -> { tex, cols, rows }
     this.items = {};      // name -> THREE.Texture
@@ -16,8 +23,11 @@ export class AssetLoader {
   }
 
   _load(url) {
+    // Prefer the embedded data: URI (works offline / from file://); fall back to
+    // the on-disk path when running unbundled from a dev server.
+    const src = EMBEDDED[url] || url;
     return new Promise((resolve, reject) => {
-      this.loader.load(url, resolve, undefined, () => reject(new Error('failed to load ' + url)));
+      this.loader.load(src, resolve, undefined, () => reject(new Error('failed to load ' + url)));
     });
   }
 

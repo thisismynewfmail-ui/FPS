@@ -5,3 +5,7 @@ package-lock.json
 _smoke_shots/
 *.log
 .DS_Store
+
+# Regenerable build input (its contents are already baked into dist/game.bundle.js).
+# Recreate with tools/build.sh (or tools/embed_assets.py).
+src/generated/

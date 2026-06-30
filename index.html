@@ -98,9 +98,6 @@
     flex-direction:column; gap:14px; background:#05060a; color:var(--accent); font-size:22px; letter-spacing:3px; z-index:50; }
   #loading small { color:#6a766a; font-size:13px; letter-spacing:1px; }
 </style>
-<script type="importmap">
-{ "imports": { "three": "./vendor/three.module.js" } }
-</script>
 </head>
 <body>
   <div id="game">
@@ -112,6 +109,20 @@
       <small>procedurally generating the wasteland</small>
     </div>
   </div>
-  <script type="module" src="./src/main.js"></script>
+  <!-- Self-contained classic bundle (Three.js + game) so it runs from a server
+       OR by double-clicking this file directly. Rebuild with tools/build.sh. -->
+  <script src="./dist/game.bundle.js"></script>
+  <script>
+    // Safety net: if the bundle never boots, explain how to run the game.
+    setTimeout(function () {
+      if (window.GAME) return;
+      var l = document.getElementById('loading');
+      if (l) l.innerHTML = '<div style="color:#d44">COULD NOT START</div>' +
+        '<small>If you see this, your browser blocked the script.<br>' +
+        'Try a modern browser, or run a local server:<br>' +
+        '<code>python3 -m http.server 8000</code> then open ' +
+        '<code>http://localhost:8000/</code></small>';
+    }, 6000);
+  </script>
 </body>
 </html>
