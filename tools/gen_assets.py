@@ -378,10 +378,46 @@ def dehalo(rgba, passes=3, lum_t=200, sat_t=24):
     return arr
 
 
+def alpha_bleed(rgba, iters=16):
+    """Flood the colour of opaque pixels outward into the fully-transparent
+    region (edge padding). The keyed-out background is still WHITE in RGB
+    (alpha 0); any later bilinear filtering — e.g. the bundle's downscale — would
+    blend that white back into the silhouette and recreate a halo. After bleeding
+    there is no white left to blend, so edges stay clean at any filter/scale."""
+    arr = rgba.astype(np.float32).copy()
+    h, w, _ = arr.shape
+    rgb = arr[..., :3]
+    known = arr[..., 3] > 0
+
+    def shift(a, dy, dx):
+        out = np.zeros_like(a)
+        ys = slice(max(0, dy), h + min(0, dy)); xs = slice(max(0, dx), w + min(0, dx))
+        yt = slice(max(0, -dy), h + min(0, -dy)); xt = slice(max(0, -dx), w + min(0, -dx))
+        out[ys, xs] = a[yt, xt]
+        return out
+
+    dirs = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+    for _ in range(iters):
+        unknown = ~known
+        if not unknown.any():
+            break
+        sumc = np.zeros_like(rgb); cnt = np.zeros((h, w), np.float32)
+        for dy, dx in dirs:
+            k = shift(known.astype(np.float32), dy, dx)
+            c = np.stack([shift(rgb[..., i], dy, dx) for i in range(3)], axis=2)
+            sumc += c * k[..., None]; cnt += k
+        fill = unknown & (cnt > 0)
+        rgb[fill] = sumc[fill] / cnt[fill][..., None]
+        known = known | fill
+    arr[..., :3] = np.clip(rgb, 0, 255)
+    return arr.astype(np.uint8)
+
+
 def process_sheet(src, dst, preserve_top=0.0):
     rgb = np.asarray(Image.open(src).convert("RGB"))
     rgba = flood_key(rgb, preserve_top=preserve_top)
     rgba = dehalo(rgba)
+    rgba = alpha_bleed(rgba)
     img = Image.fromarray(rgba, "RGBA")
     img.save(os.path.join(SPR_DIR, dst))
     print("  sprite", dst, img.size)
