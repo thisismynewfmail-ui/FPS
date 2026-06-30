@@ -378,6 +378,26 @@ def dehalo(rgba, passes=3, lum_t=200, sat_t=24):
     return arr
 
 
+def erode_alpha(rgba, px=1):
+    """Shrink the silhouette by `px` pixels. The source art has a light
+    anti-aliased rim one pixel wide; against a dark scene that reads as a white
+    border. Peeling the outermost ring exposes the art's intended dark outline.
+    8-connectivity so corners erode evenly."""
+    arr = rgba.copy()
+    a = arr[..., 3]
+    for _ in range(px):
+        opq = a > 0
+        trans = ~opq
+        nbr = np.zeros_like(trans)
+        nbr[1:, :] |= trans[:-1, :]; nbr[:-1, :] |= trans[1:, :]
+        nbr[:, 1:] |= trans[:, :-1]; nbr[:, :-1] |= trans[:, 1:]
+        nbr[1:, 1:] |= trans[:-1, :-1]; nbr[:-1, :-1] |= trans[1:, 1:]
+        nbr[1:, :-1] |= trans[:-1, 1:]; nbr[:-1, 1:] |= trans[1:, :-1]
+        a = np.where(opq & nbr, 0, a)
+    arr[..., 3] = a
+    return arr
+
+
 def alpha_bleed(rgba, iters=16):
     """Flood the colour of opaque pixels outward into the fully-transparent
     region (edge padding). The keyed-out background is still WHITE in RGB
@@ -417,6 +437,7 @@ def process_sheet(src, dst, preserve_top=0.0):
     rgb = np.asarray(Image.open(src).convert("RGB"))
     rgba = flood_key(rgb, preserve_top=preserve_top)
     rgba = dehalo(rgba)
+    rgba = erode_alpha(rgba, 1)     # peel the light anti-aliased rim
     rgba = alpha_bleed(rgba)
     img = Image.fromarray(rgba, "RGBA")
     img.save(os.path.join(SPR_DIR, dst))
