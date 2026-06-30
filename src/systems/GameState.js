@@ -1,5 +1,6 @@
 import { formatInt, formatTime } from '../engine/util.js';
 import { WIN_KILLS } from '../config/constants.js';
+import { buildStatMeters } from '../rendering/Meter.js';
 
 export const STATE = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', VICTORY: 'victory', DEAD: 'dead' };
 
@@ -61,16 +62,17 @@ export class GameState {
     this.state = STATE.PAUSED;
     this._showHUD(false);
     this.ctx.input.exitLock();
-    const s = this.ctx.score;
+    const s = this.ctx.score, tod = this.ctx.timeOfDay;
     this._panel(`
       <h1>PAUSED</h1>
-      <div class="stats">
-        <div>KILLS</div><div>${formatInt(s.kills)} / ${formatInt(WIN_KILLS)}</div>
-        <div>ACCURACY</div><div>${s.accuracy().toFixed(1)}%</div>
-        <div>TIME</div><div>${formatTime(s.timeSurvived())}</div>
-      </div>
+      <div class="pause-stats-slot"></div>
+      <div class="pause-sub">${formatInt(s.kills)} / ${formatInt(WIN_KILLS)} killed &nbsp;·&nbsp; WAVE ${this.ctx.waves.wave}</div>
       <button class="btn" id="btn-resume">RESUME</button>
     `);
+    this.overlay.querySelector('.pause-stats-slot').appendChild(buildStatMeters({
+      kills: s.kills, accuracy: s.accuracy(), timeSec: s.timeSurvived(),
+      dayPhase: tod.phase, dayLabel: tod.label(), night: tod.isNight(),
+    }));
     this.overlay.querySelector('#btn-resume').onclick = () => this.resume();
   }
 

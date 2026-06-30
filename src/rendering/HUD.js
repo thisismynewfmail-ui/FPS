@@ -1,58 +1,7 @@
-import { WIN_KILLS } from '../config/constants.js';
-import { formatInt, formatTime, clamp } from '../engine/util.js';
-
-const SVGNS = 'http://www.w3.org/2000/svg';
-
-// Builds an SVG circular gauge: a faint track ring + a coloured progress ring
-// (driven by stroke-dashoffset) with a value + label stacked in the centre.
-function makeMeter(label, { size = 84, stroke = 7, color = '#b8e02c' } = {}) {
-  const r = size / 2 - stroke;
-  const circ = 2 * Math.PI * r;
-  const root = document.createElement('div');
-  root.className = 'meter';
-  root.style.width = root.style.height = size + 'px';
-
-  const svg = document.createElementNS(SVGNS, 'svg');
-  svg.setAttribute('width', size); svg.setAttribute('height', size);
-  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-  const mk = (cls) => {
-    const c = document.createElementNS(SVGNS, 'circle');
-    c.setAttribute('cx', size / 2); c.setAttribute('cy', size / 2); c.setAttribute('r', r);
-    c.setAttribute('fill', 'none'); c.setAttribute('stroke-width', stroke);
-    c.setAttribute('class', cls);
-    return c;
-  };
-  const track = mk('meter-track');
-  const fg = mk('meter-fg');
-  fg.setAttribute('stroke', color);
-  fg.setAttribute('stroke-linecap', 'round');
-  fg.setAttribute('stroke-dasharray', circ);
-  fg.setAttribute('stroke-dashoffset', circ);
-  fg.setAttribute('transform', `rotate(-90 ${size / 2} ${size / 2})`);
-  svg.appendChild(track); svg.appendChild(fg);
-
-  const center = document.createElement('div'); center.className = 'meter-center';
-  const valEl = document.createElement('div'); valEl.className = 'meter-val';
-  const labEl = document.createElement('div'); labEl.className = 'meter-label'; labEl.textContent = label;
-  center.appendChild(valEl); center.appendChild(labEl);
-
-  root.appendChild(svg); root.appendChild(center);
-  return {
-    root, valEl, labEl, fg, circ,
-    setFrac(f) { fg.setAttribute('stroke-dashoffset', this.circ * (1 - clamp(f, 0, 1))); },
-    setColor(c) { fg.setAttribute('stroke', c); },
-    setText(v, l) { valEl.textContent = v; if (l !== undefined) labEl.textContent = l; },
-  };
-}
-
-function abbrev(n) {
-  if (n < 1000) return String(n);
-  if (n < 1e6) return (n / 1000).toFixed(n < 10000 ? 1 : 0) + 'K';
-  return (n / 1e6).toFixed(2) + 'M';
-}
-
-// Retro survival-horror HUD. Circular gauges for Kills / Accuracy / Time, a
-// transient top weapon picker (only on switch), segmented health and ammo.
+// Retro survival-horror HUD. Deliberately minimal on-screen chrome: crosshair,
+// segmented health (bottom-left), ammo (bottom-right), a wave indicator, and a
+// transient weapon picker shown only on switch. Run stats (kills / accuracy /
+// time) intentionally live on the PAUSE screen, not here.
 export class HUD {
   constructor(root) {
     this.root = root;
@@ -68,23 +17,16 @@ export class HUD {
     this.vignette = el('vignette');
     this.scope = el('scope'); this.scope.style.display = 'none';
 
-    // ---- top gauges ----
-    this.meterTime = makeMeter('TIME', { color: '#7ec8ff' });
-    this.meterKills = makeMeter('KILLS', { size: 96, color: '#b8e02c' });
-    this.meterAcc = makeMeter('ACC', { color: '#ffb454' });
-    const left = el('meter-left'); left.appendChild(this.meterTime.root);
-    const mid = el('meter-mid'); mid.appendChild(this.meterKills.root);
-    this.wave = el('wave-label', mid); this.wave.textContent = '';
-    const right = el('meter-right'); right.appendChild(this.meterAcc.root);
+    this.wave = el('wave'); this.wave.textContent = ''; this.wave.style.display = 'none';   // top-centre
 
-    // ---- transient weapon picker (top, only shown on switch) ----
+    // transient weapon picker (top, only shown on switch)
     this.weaponMenu = el('weapon-menu'); this.weaponMenu.style.opacity = '0';
     this.weaponName = el('wm-name', this.weaponMenu);
     this.weaponBar = el('wm-bar', this.weaponMenu);
     this.slotEls = [];
     this._weaponMenuT = 0;
 
-    // ---- bottom-left health ----
+    // bottom-left health
     const health = el('health');
     el('hud-cap', health).textContent = 'HEALTH';
     this.healthSegs = el('seg-row', health);
@@ -92,7 +34,7 @@ export class HUD {
     for (let i = 0; i < 10; i++) this.segEls.push(el('seg', this.healthSegs));
     this.healthNum = el('big-num', health);
 
-    // ---- bottom-right ammo (+ current weapon label) ----
+    // bottom-right ammo (+ current weapon label)
     const ammo = el('ammo');
     this.ammoWeapon = el('ammo-weapon', ammo); this.ammoWeapon.textContent = '';
     this.ammoNum = el('big-num', ammo);
@@ -134,23 +76,6 @@ export class HUD {
     this.ammoNum.classList.toggle('empty', !melee && mag === 0);
   }
 
-  setKills(kills) {
-    this.meterKills.setFrac(kills / WIN_KILLS);
-    this.meterKills.setText(abbrev(kills), '/ ' + abbrev(WIN_KILLS));
-  }
-
-  setAccuracy(pct) {
-    this.meterAcc.setFrac(pct / 100);
-    this.meterAcc.setText(pct.toFixed(0) + '%', 'ACC');
-  }
-
-  // survived seconds, day-cycle phase [0,1), and a phase label (DAY/NIGHT/…)
-  setTime(survived, dayPhase = 0, phaseLabel = 'TIME', night = false) {
-    this.meterTime.setFrac(dayPhase);
-    this.meterTime.setText(formatTime(survived), phaseLabel);
-    this.meterTime.setColor(night ? '#9fb0ff' : '#7ec8ff');
-  }
-
   // update current weapon; show the transient picker only when `show` is true
   setWeapon(index, name, show = false) {
     this.weaponName.textContent = name;
@@ -159,7 +84,10 @@ export class HUD {
     if (show) { this._weaponMenuT = 2.4; this.weaponMenu.style.opacity = '1'; }
   }
 
-  setWave(n) { this.wave.textContent = n > 0 ? `WAVE ${n}` : ''; }
+  setWave(n) {
+    this.wave.textContent = n > 0 ? `WAVE ${n}` : '';
+    this.wave.style.display = n > 0 ? 'block' : 'none';
+  }
 
   showScope(on) { this.scope.style.display = on ? 'block' : 'none'; this.crosshair.style.display = on ? 'none' : 'block'; }
 

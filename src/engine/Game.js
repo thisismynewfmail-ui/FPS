@@ -155,12 +155,8 @@ export class Game {
     ctx.effects.sampleShake(this._shake);
     ctx.player.applyCamera(this._shake);
 
-    // HUD live values
+    // HUD live values (kills/accuracy/time are shown on the pause screen, not here)
     ctx.hud.setHealth(ctx.player.health, 100);
-    ctx.hud.setKills(ctx.score.kills);
-    ctx.hud.setAccuracy(ctx.score.accuracy());
-    const tod = ctx.timeOfDay;
-    ctx.hud.setTime(ctx.score.timeSurvived(), tod.phase, tod.label(), tod.isNight());
 
     // ambience scales with nearby living zombies
     let near = 0;

@@ -88,7 +88,7 @@ src/
                NPC (peaceful survivor), Pickup
   weapons/     WeaponDefs (pure data), WeaponSystem (firing, ammo, reload, scope)
   rendering/   Renderer (scene/camera/fog/lights/sky), Billboard (directional
-               sprites), Effects (blood pool + screen shake), HUD, WeaponView
+               sprites), Effects (blood pool + screen shake), HUD, WeaponView, Meter (pause gauges)
   world/       World (seeded procedural map), Collision (AABB + sliding + LOS),
                Nav (BFS flow-field pathfinding)
   systems/     Score (+ win condition), WaveManager, GameState (menu/pause/win/death),
@@ -175,8 +175,8 @@ CHROMIUM=/path/to/chrome node tools/smoke_test.mjs   # screenshots -> ./_smoke_s
 7. ✅ Power-of-two, tileable textures
 8. ✅ Entity billboarding (zombies, NPC, items always face the camera; directional sprite rows)
 9. ✅ Static geometry uses textured polygons, not billboards
-10. ✅ HUD: segmented health, ammo counter, circular **Kills / Accuracy / Time** gauges,
-    wave indicator, and a top weapon picker that appears only on switch (1–5 / wheel)
+10. ✅ HUD: segmented health, ammo counter, wave indicator, and a top weapon picker that
+    appears only on switch (1–5 / wheel); circular **Kills / Accuracy / Time** gauges on the pause screen
 11. ✅ Kill counter tracks to **exactly 250,000** → victory
 12. ✅ Victory screen with final stats (time, accuracy, kills by type, score)
 13. ✅ Procedural SFX for weapons, zombies, pickups, footsteps, victory
