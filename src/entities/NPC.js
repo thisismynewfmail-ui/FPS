@@ -11,7 +11,7 @@ export class NPC extends Entity {
     this.radius = 0.4;
     this.home = home;
     this.pos.set(home.x, 0, home.z);
-    this.height = NPC_SIZE.HEIGHT;
+    this.height = NPC_SIZE.PEACEFUL_HEIGHT;
     this.yCenter = this.height / 2 - NPC_SIZE.FEET_FRAC * this.height;   // feet on the ground
     this.billboard = new SpriteBillboard(sheet, { width: this.height * NPC_SIZE.ASPECT, height: this.height, color: 0xffffff, animFps: 6 });
     this.billboard.mesh.position.set(home.x, this.yCenter, home.z);

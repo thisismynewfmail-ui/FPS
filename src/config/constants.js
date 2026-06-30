@@ -6,7 +6,8 @@ export const WIN_KILLS = 250000;          // exact victory threshold — enforce
 // FEET_FRAC are measured from the sprite cell (eyes/feet as a fraction of cell
 // height from the bottom); ASPECT is the cell's width/height.
 export const NPC_SIZE = {
-  HEIGHT: 2.7,            // default billboard height (metres)
+  HEIGHT: 2.7,            // default billboard height (metres) — zombies
+  PEACEFUL_HEIGHT: 2.45,  // peaceful survivors stand a touch shorter
   EYE_FRAC: 0.562,
   FEET_FRAC: 0.012,
   ASPECT: 170 / 256,
