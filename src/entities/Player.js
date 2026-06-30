@@ -118,11 +118,7 @@ export class Player extends Entity {
       this.bob.x *= 0.85; this.bob.y *= 0.85;
     }
 
-    // regen
-    const now = performance.now() / 1000;
-    if (this.alive && now - this.lastDamage > PLAYER.REGEN_DELAY && this.health < PLAYER.MAX_HEALTH) {
-      this.health = Math.min(PLAYER.MAX_HEALTH, this.health + PLAYER.REGEN_RATE * dt);
-    }
+    // No passive regen — health is only restored by health-kit pickups.
 
     this.applyCamera();
   }

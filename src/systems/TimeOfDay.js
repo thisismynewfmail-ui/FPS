@@ -36,6 +36,7 @@ export class TimeOfDay {
     this._hs = new THREE.Color();
     this._hg = new THREE.Color();
     this._amb = new THREE.Color();
+    this.skyTime = 0;       // monotonic clock for cloud drift
     this.apply(0);
   }
 
@@ -50,7 +51,7 @@ export class TimeOfDay {
   }
   isNight() { const l = this.label(); return l === 'NIGHT'; }
 
-  update(dt) { this.t = (this.t + dt) % this.cycle; this.apply(dt); }
+  update(dt) { this.t = (this.t + dt) % this.cycle; this.skyTime += dt; this.apply(dt); }
 
   apply() {
     const phase = this.t / this.cycle;
@@ -77,8 +78,16 @@ export class TimeOfDay {
     r.sun.intensity = lerp(a.sunI, b.sunI);
     // celestial arc: sun high at noon, a low "moon" through the night
     const ang = (phase - 0.25) * Math.PI * 2;
-    const elev01 = Math.max(0, Math.sin(ang));
+    const elevSin = Math.sin(ang);
+    const elev01 = Math.max(0, elevSin);
     r.sun.position.set(Math.cos(ang) * 70, 18 + elev01 * 80, 40);
+
+    // drive the sky shader: sun direction/colour, day-amount and cloud clock
+    const su = r.skyUniforms;
+    su.sunDir.value.set(r.sun.position.x, r.sun.position.y, r.sun.position.z).normalize();
+    su.sunColor.value.copy(r.sun.color);
+    su.dayAmount.value = Math.min(1, Math.max(0, elevSin * 1.3 + 0.22));
+    su.time.value = this.skyTime;
 
     r.hemi.color.copy(this._hs.copy(a.hemiSky).lerp(b.hemiSky, tt));
     r.hemi.groundColor.copy(this._hg.copy(a.hemiGnd).lerp(b.hemiGnd, tt));

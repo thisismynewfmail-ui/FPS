@@ -36,8 +36,6 @@ export const PLAYER = {
   JUMP_SPEED: 6.4,
   GRAVITY: 20,
   MAX_HEALTH: 100,
-  REGEN_DELAY: 6,        // seconds out of combat before regen
-  REGEN_RATE: 6,         // hp per second
   MOUSE_SENS: 0.0022,
   FOV: 90,
   BOB_WALK: 0.045,

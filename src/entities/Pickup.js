@@ -44,8 +44,8 @@ export class PickupManager {
     for (let i = this.items.length - 1; i >= 0; i--) {
       const it = this.items[i];
       it.t += dt;
-      it.sprite.position.y = 0.7 + Math.sin(it.t * 2) * 0.12;
-      it.sprite.material.rotation = it.t * 1.5;
+      // gentle hover only — no spin. THREE.Sprite always faces the camera.
+      it.sprite.position.y = 0.7 + Math.sin(it.t * 2) * 0.14;
       const d = Math.hypot(it.sprite.position.x - px, it.sprite.position.z - pz);
       if (d < 1.35) {
         let consumed = false;
